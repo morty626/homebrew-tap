@@ -5,7 +5,7 @@ cask "cuktech-studio-beta" do
   url "https://github.com/morty626/cuktech-studio-releases/releases/download/v0.1.0-beta.7/CUKTECH-Studio-0.1.0-beta.7-macos-arm64.zip"
   name "CUKTECH Studio Beta"
   desc "Menu bar launcher for the CUKTECH charging dashboard"
-  homepage "https://github.com/morty626/cuktech-studio-releases"
+  homepage "https://morty626.github.io/cuktech-studio-releases/"
 
   depends_on arch: :arm64
   depends_on macos: :sonoma
