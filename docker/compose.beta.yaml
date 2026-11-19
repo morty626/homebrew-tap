@@ -1,0 +1,74 @@
+name: cuktech-studio
+
+x-cuktech-ports:
+  frontend: &frontend-port "${CUKTECH_FRONTEND_PORT:-28753}"
+  backend: &backend-port "${CUKTECH_BACKEND_PORT:-28759}"
+
+services:
+  backend:
+    image: ghcr.io/morty626/cuktech-studio-backend:${CUKTECH_VERSION:-beta}
+    pull_policy: always
+    network_mode: host
+    privileged: true
+    environment:
+      CUKTECH_CONFIG_PATH: /data/config.yaml
+      CUKTECH_HISTORY_DB_PATH: /data/port_history.db
+      CUKTECH_SERVER_PORT: *backend-port
+      CUKTECH_API_ONLY: "1"
+      TZ: "${TZ:-Asia/Shanghai}"
+    healthcheck:
+      test: ["CMD", "python3", "/app/docker/healthcheck.py"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    volumes:
+      - type: bind
+        source: /var/run/dbus/system_bus_socket
+        target: /var/run/dbus/system_bus_socket
+        read_only: true
+        bind:
+          create_host_path: false
+      - backend-data:/data
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  frontend:
+    image: ghcr.io/morty626/cuktech-studio-frontend:${CUKTECH_VERSION:-beta}
+    pull_policy: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - host_ip: "${CUKTECH_FRONTEND_BIND:-127.0.0.1}"
+        published: *frontend-port
+        target: 8080
+    environment:
+      CUKTECH_PUBLIC_ORIGIN: "${CUKTECH_PUBLIC_ORIGIN:-}"
+      CUKTECH_PUBLISHED_FRONTEND_PORT: *frontend-port
+      CUKTECH_MANAGED_BACKEND_PORT: *backend-port
+    volumes:
+      - frontend-data:/data
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  backend-data:
+  frontend-data:
